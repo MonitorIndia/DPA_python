@@ -4,6 +4,7 @@ import requests
 import os
 import shutil
 from pgmagick import Image, CompositeOperator as co
+import gc
 
 # pretime
 a = datetime.datetime.now()
@@ -12,7 +13,7 @@ a = datetime.datetime.now()
 product_catalog_id = "224411331348696"
 access_token = "EAADLKZCtcbPoBAGDMydJ8JiM3jKAoZCdKuRKysGYTYT3Krg2pyMVnLZBabgNJ1LoZAYJQY2AYAlRwKlP46aJHeYB5rZC5sJF95ZCtSpEQ1yU9CiT6KZAKricmlZCu7TZBjxuXlkdqkXW4JDw4s2ZCLlloi8pqVSGqhRd4U5ZBDV8ZCNrvwZDZD"
 ids_file = "id_list.txt"
-prouct_limit  = 10;
+products_limit  = 1000;
 
 #read file which contains retailer_id list and return it's contents.
 def read_file(file_name):
@@ -72,21 +73,28 @@ def change_image_labels(obj):
 #             os.remove(retailer_id+'.png')
         except Exception:
             pass
-    
+ 
+def chunks(line_list, n):
+    for index in xrange(0, len(line_list), n):
+        yield line_list[index:index + n]   
     
 def main():
     lines = read_file(ids_file)
-    products = call_fb_api(lines)
     setup_download_dir()
-    print "Downloading Images..."
-    p = Pool(8)
-    p.map(get_image, products)
-    print "Downloading Done"
-    print "Processing images..."
-    p = Pool(8)
-    p.map(change_image_labels, products)
-    print "Processing Done"
-    
+    for chunk in chunks(lines, products_limit):
+        products = call_fb_api(chunk)
+        print "Downloading Images..."
+        p = Pool(8)
+        p.map(get_image, products)
+        print "Downloading Done"
+        print "Processing images..."
+        p = Pool(8)
+        p.map(change_image_labels, products)
+        print "Processing Done"
+#         memory release
+        del products
+        gc.collect()
+        
 main()
 
 b = datetime.datetime.now()
