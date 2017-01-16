@@ -113,9 +113,11 @@ def update_csv(products):
             print file
             out_file_name = str(file).replace(".csv", "")
             print out_file_name
+#             command = "sed -i "" 's/" + retailer_id + "/" + "rajsharma1612" + "/g' " + file
             command = "sed 's/" + retailer_id + "/" + "rajsharma1612" + "/g' " + file + " > " + out_file_name + "_updated.csv"
             print command
-            subprocess.call([command], shell=True)     
+            subprocess.call([command], shell=True)
+            os.rename(out_file_name+"_updated.csv", file)     
         
         
         
