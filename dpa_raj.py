@@ -13,6 +13,8 @@ a = datetime.datetime.now()
 product_catalog_id = "224411331348696"
 access_token = "EAADLKZCtcbPoBAGDMydJ8JiM3jKAoZCdKuRKysGYTYT3Krg2pyMVnLZBabgNJ1LoZAYJQY2AYAlRwKlP46aJHeYB5rZC5sJF95ZCtSpEQ1yU9CiT6KZAKricmlZCu7TZBjxuXlkdqkXW4JDw4s2ZCLlloi8pqVSGqhRd4U5ZBDV8ZCNrvwZDZD"
 ids_file = "id_list.txt"
+api_endpoint = "https://graph.facebook.com/v2.8/"
+token_param = "access_token=" + access_token
 products_limit  = 1000;
 
 #read file which contains retailer_id list and return it's contents.
@@ -29,13 +31,11 @@ def read_file(file_name):
 
 #call fb api with retailer_id list and return all products data.
 def call_fb_api(ids):
-    api_endpoint = "https://graph.facebook.com/v2.8/"
     filter_param = "filter={'retailer_id':{'is_any':[" + ','.join("'{0}'".format(w.strip()) for w in ids) + "]}}"
     fields_param = "fields=image_url,retailer_id"
     limit_param = "limit="+str(prouct_limit)
-    token_param = "access_token=" + access_token
     fb_graph_url = api_endpoint + product_catalog_id + "/products?" + limit_param + "&" + fields_param + "&" + filter_param + "&" + token_param
-    print fb_graph_url
+#     print fb_graph_url
     response = requests.get(fb_graph_url).json()
     return response['data']    
 
@@ -77,6 +77,36 @@ def change_image_labels(obj):
 def chunks(line_list, n):
     for index in xrange(0, len(line_list), n):
         yield line_list[index:index + n]   
+
+def get_all_csv_feeds():
+#     setup_download_dir()
+    fields_param = "fields=id,file_name,name,schedule"
+    fb_graph_url = api_endpoint + product_catalog_id + "/product_feeds?"  +  fields_param + "&"  + "&" + token_param
+#     print fb_graph_url
+    response = requests.get(fb_graph_url).json()
+    a = datetime.datetime.now()
+    all_data = response['data']
+    for data in all_data:
+        file_name = data['file_name']
+        csv_url = data['schedule']['url']
+        print "Downloading "+csv_url
+        response  = requests.get(csv_url).text
+        print response
+        f = open(file_name+".csv","wb")
+        f.write(response)
+    b = datetime.datetime.now()
+    print "Total time taken = "+str((b-a)) 
+#         print data
+#     file_name = all_data[0]['file_name']
+#     print all_data
+#     csv_url =  all_data[0]['schedule']['url']
+#     response = requests.get(csv_url).text
+#     f = open(file_name+".csv","wb")
+#     f.write(response)
+#     print response3
+    
+
+
     
 def main():
     lines = read_file(ids_file)
@@ -91,6 +121,7 @@ def main():
         p = Pool(8)
         p.map(change_image_labels, products)
         print "Processing Done"
+        get_all_csv_feeds()
 #         memory release
         del products
         gc.collect()
