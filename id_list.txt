@@ -1,10 +1,2 @@
 product-0
 product-1
-product-10
-product-100
-product-1000
-product-10000
-product-100000
-product-1000000
-product-1000001
-product-1000002

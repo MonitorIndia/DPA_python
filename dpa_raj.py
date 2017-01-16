@@ -1,10 +1,15 @@
-from multiprocessing import Pool
+from __builtin__ import file
 import datetime
-import requests
+import gc
+import glob
+from multiprocessing import Pool
 import os
 import shutil
+import subprocess
+
 from pgmagick import Image, CompositeOperator as co
-import gc
+import requests
+
 
 # pretime
 a = datetime.datetime.now()
@@ -15,60 +20,60 @@ access_token = "EAADLKZCtcbPoBAGDMydJ8JiM3jKAoZCdKuRKysGYTYT3Krg2pyMVnLZBabgNJ1L
 ids_file = "id_list.txt"
 api_endpoint = "https://graph.facebook.com/v2.8/"
 token_param = "access_token=" + access_token
-products_limit  = 1000;
+products_limit = 1000;
 
-#read file which contains retailer_id list and return it's contents.
+# read file which contains retailer_id list and return it's contents.
 def read_file(file_name):
     f = open(file_name)
     lines = f.readlines()
-    if(len(lines)<1):
+    if(len(lines) < 1):
         raise "File doesn't contains any data. At least one retailer-id is required."
     f.close()
     global prouct_limit
-    prouct_limit  = len(lines)
-    print "Total "+str(len(lines))+" items"
+    prouct_limit = len(lines)
+    print "Total " + str(len(lines)) + " items"
     return lines
 
-#call fb api with retailer_id list and return all products data.
+# call fb api with retailer_id list and return all products data.
 def call_fb_api(ids):
     filter_param = "filter={'retailer_id':{'is_any':[" + ','.join("'{0}'".format(w.strip()) for w in ids) + "]}}"
     fields_param = "fields=image_url,retailer_id"
-    limit_param = "limit="+str(prouct_limit)
+    limit_param = "limit=" + str(prouct_limit)
     fb_graph_url = api_endpoint + product_catalog_id + "/products?" + limit_param + "&" + fields_param + "&" + filter_param + "&" + token_param
 #     print fb_graph_url
     response = requests.get(fb_graph_url).json()
     return response['data']    
 
-#Download images using image_url and save into /tmp dir.
+# Download images using image_url and save into /tmp dir.
 def get_image(obj):
-    print "Downloading "+str("'"+obj['retailer_id']+"'")
+    print "Downloading " + str("'" + obj['retailer_id'] + "'")
     image_data = requests.get(obj["image_url"]).content
     f = open(obj["retailer_id"] + ".png", "wb")
     f.write(image_data)
     f.close()
 
-#setup /tmp dir. If it already exists clean it.    
+# setup /tmp dir. If it already exists clean it.    
 def setup_download_dir():
     cwd = os.getcwd()
-    if(os.path.isdir(cwd+"//tmp" ) == True):
-        shutil.rmtree(cwd+"//tmp")
-    if(os.path.isdir(cwd+"//tmp" ) == False):
-            os.mkdir(cwd+"//tmp",0777)
-    os.chdir(cwd+"//tmp")
+    if(os.path.isdir(cwd + "//tmp") == True):
+        shutil.rmtree(cwd + "//tmp")
+    if(os.path.isdir(cwd + "//tmp") == False):
+            os.mkdir(cwd + "//tmp", 0777)
+    os.chdir(cwd + "//tmp")
 
-#Change downloaded images labels.    
+# Change downloaded images labels.    
 def change_image_labels(obj):
-        print "Processing "+str("'"+obj['retailer_id']+"'")
+        print "Processing " + str("'" + obj['retailer_id'] + "'")
         try:
             retailer_id = str(obj['retailer_id'])
-            im = Image(retailer_id+'.png')
+            im = Image(retailer_id + '.png')
             os.chdir("..")
             new = Image('new_r.png')
             red = Image('red.png')
             im.composite(red, 0, 0, co.OverCompositeOp)
             im.composite(new, 1, 1, co.OverCompositeOp)
-            os.chdir(os.getcwd()+"//tmp")
-            im.write(retailer_id+".png")
+            os.chdir(os.getcwd() + "//tmp")
+            im.write(retailer_id + ".png")
 #             im.write(retailer_id+"_comp.png")
 #             os.remove(retailer_id+'.png')
         except Exception:
@@ -81,33 +86,39 @@ def chunks(line_list, n):
 def get_all_csv_feeds():
 #     setup_download_dir()
     fields_param = "fields=id,file_name,name,schedule"
-    fb_graph_url = api_endpoint + product_catalog_id + "/product_feeds?"  +  fields_param + "&"  + "&" + token_param
+    fb_graph_url = api_endpoint + product_catalog_id + "/product_feeds?" + fields_param + "&" + "&" + token_param
 #     print fb_graph_url
     response = requests.get(fb_graph_url).json()
-    a = datetime.datetime.now()
     all_data = response['data']
-    for data in all_data:
-        file_name = data['file_name']
-        csv_url = data['schedule']['url']
-        print "Downloading "+csv_url
-        response  = requests.get(csv_url).text
-        print response
-        f = open(file_name+".csv","wb")
-        f.write(response)
-    b = datetime.datetime.now()
-    print "Total time taken = "+str((b-a)) 
-#         print data
-#     file_name = all_data[0]['file_name']
-#     print all_data
-#     csv_url =  all_data[0]['schedule']['url']
-#     response = requests.get(csv_url).text
-#     f = open(file_name+".csv","wb")
-#     f.write(response)
-#     print response3
+    return all_data
+#     download_csv_files(all_data[0])
     
-
-
     
+def download_csv_files(data):
+    file_name = data['file_name'].replace(" ", "_")
+    csv_url = data['schedule']['url']
+    print "Downloading " + csv_url
+    response = requests.get(csv_url).text
+#     print response
+    f = open(file_name + ".csv", "wb")
+    f.write(response)
+    f.close()
+
+def update_csv(products):
+    for product in products:
+        retailer_id = product['retailer_id']
+        print retailer_id
+        image_url = product['image_url']
+        for file in glob.glob("*.csv"):
+            print file
+            out_file_name = str(file).replace(".csv", "")
+            print out_file_name
+            command = "sed 's/" + retailer_id + "/" + "rajsharma1612" + "/g' " + file + " > " + out_file_name + "_updated.csv"
+            print command
+            subprocess.call([command], shell=True)     
+        
+        
+        
 def main():
     lines = read_file(ids_file)
     setup_download_dir()
@@ -121,7 +132,14 @@ def main():
         p = Pool(8)
         p.map(change_image_labels, products)
         print "Processing Done"
-        get_all_csv_feeds()
+        all_data = get_all_csv_feeds()
+        print all_data
+#         p = Pool(8)
+#         p.map(download_csv_files,all_data)
+        download_csv_files(all_data[4])
+        update_csv(products)
+#         p = Pool(8)
+#         p.map(update_csv,products)
 #         memory release
         del products
         gc.collect()
