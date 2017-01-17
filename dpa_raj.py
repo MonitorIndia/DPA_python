@@ -4,8 +4,10 @@ import gc
 import glob
 from multiprocessing import Pool
 import os
+import re
 import shutil
 import subprocess
+import urllib
 
 from pgmagick import Image, CompositeOperator as co
 import requests
@@ -37,6 +39,7 @@ def read_file(file_name):
 # call fb api with retailer_id list and return all products data.
 def call_fb_api(ids):
     filter_param = "filter={'retailer_id':{'is_any':[" + ','.join("'{0}'".format(w.strip()) for w in ids) + "]}}"
+    print filter_param
     fields_param = "fields=image_url,retailer_id"
     limit_param = "limit=" + str(prouct_limit)
     fb_graph_url = api_endpoint + product_catalog_id + "/products?" + limit_param + "&" + fields_param + "&" + filter_param + "&" + token_param
@@ -109,15 +112,18 @@ def update_csv(products):
         retailer_id = product['retailer_id']
         print retailer_id
         image_url = product['image_url']
+        urls = image_url.split("=")
+        decode_image_url = urllib.unquote(urls[2])
+        print decode_image_url
         for file in glob.glob("*.csv"):
             print file
             out_file_name = str(file).replace(".csv", "")
             print out_file_name
-#             command = "sed -i "" 's/" + retailer_id + "/" + "rajsharma1612" + "/g' " + file
-            command = "sed 's/" + retailer_id + "/" + "rajsharma1612" + "/g' " + file + " > " + out_file_name + "_updated.csv"
+#             command = "sed "+",".join("'{0}'" for w in products['image_url'])
+            command = "sed 's," + decode_image_url + "," + "rajsharma1612" + ",g' " + file + " > " + out_file_name + "_updated.csv"
             print command
             subprocess.call([command], shell=True)
-            os.rename(out_file_name+"_updated.csv", file)     
+            os.rename(out_file_name + "_updated.csv", file)     
         
         
         
