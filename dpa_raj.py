@@ -5,13 +5,11 @@ import gc
 import glob
 from multiprocessing import Pool
 import os
-
+import shutil
 from pgmagick import Image, CompositeOperator as co
 import requests
 
-
-products = []
-
+total_products = []
 
 # pretime
 a = datetime.datetime.now()
@@ -114,7 +112,7 @@ def update_csv(file):
         writer = csv.DictWriter(open(out_file_name+"_updated.csv","wb"),fieldnames=reader.fieldnames)
         writer.writeheader()
         for current_row in reader:
-            for product in products:
+            for product in total_products:
                 retailer_id = product['retailer_id']
                 if(current_row['id']==retailer_id):
                     current_row['image_link']= "RajSharma"
@@ -126,8 +124,9 @@ def main():
     lines = read_file(ids_file)
     setup_download_dir()
     for chunk in chunks(lines, products_limit):
-        global products
         products = call_fb_api(chunk)
+        global total_products
+        total_products += products
         print "Downloading Images..."
         p = Pool(8)
         p.map(get_image, products)
@@ -136,6 +135,7 @@ def main():
         p = Pool(8)
         p.map(change_image_labels, products)
         print "Processing Done"
+    print total_products
     all_data = get_all_csv_feeds()
     p = Pool(8)
     p.map(download_csv_files,all_data)
@@ -143,8 +143,8 @@ def main():
     p = Pool(8)
     p.map(update_csv,files)
 
-#         memory release
-    del products
+#memory release
+    del total_products
     gc.collect()
         
 main()
