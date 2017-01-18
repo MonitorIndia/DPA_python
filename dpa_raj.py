@@ -12,6 +12,7 @@ import requests
 import urlparse
 import re
 import csv
+products = []
 
 
 # pretime
@@ -88,16 +89,14 @@ def chunks(line_list, n):
         yield line_list[index:index + n]   
 
 def get_all_csv_feeds():
-#     setup_download_dir()
     fields_param = "fields=id,file_name,name,schedule"
     fb_graph_url = api_endpoint + product_catalog_id + "/product_feeds?" + fields_param + "&" + "&" + token_param
 #     print fb_graph_url
     response = requests.get(fb_graph_url).json()
     all_data = response['data']
     return all_data
+
 #     download_csv_files(all_data[0])
-    
-    
 def download_csv_files(data):
     file_name = data['file_name'].replace(" ", "_")
     csv_url = data['schedule']['url']
@@ -108,67 +107,47 @@ def download_csv_files(data):
     f.write(response)
     f.close()
 
-def update_csv(products):
-#     print products
-#     for product in products:
-#         retailer_id = product['retailer_id']
-#         image_url = product['image_url']
-#         for file in glob.glob("*.csv"): 
-#             print file
-#             reader  = csv.DictReader(open(file))
-#             writer = csv.DictWriter(open("demo.csv","wb"))
-# #             i=0
-#             for row in reader:
-# #                 print row['id']
-# #                 print row['image_link']
-# #                 print row
-#                 if(retailer_id == row['id']):
-#                     row['image_link']='rajsharma'
-#                 i+=1
-    
-    print products
-    image_urls = []
-    for product in products:
-        print product
-        decoded_url = urllib.unquote(product['image_url'])
-        url = re.search('&url.*(.png)', decoded_url).group()
-        print url
-        url = re.search('&url.*(.png)', decoded_url).group(0).split("=")[1]
-        image_urls.append(url)
-    print image_urls
-    for file in glob.glob("*.csv"): 
+# Update image_link in csv files
+def update_csv(file):
+#     for file in glob.glob("*.csv"): 
         print file
+        reader  = csv.DictReader(open(file))
         out_file_name = str(file).replace(".csv", "")
-        command  = "sed '"+";".join("{0}".format("s,"+w.strip()+",rajsharma1612,g") for w in image_urls)+"' "+file+" > "+out_file_name+"_updated.csv"
-        print command
-        subprocess.call([command], shell=True)
-        os.rename(out_file_name + "_updated.csv", file)
-        
+        writer = csv.DictWriter(open(out_file_name+"_updated.csv","wb"),fieldnames=reader.fieldnames)
+        writer.writeheader()
+        for current_row in reader:
+            for product in products:
+                retailer_id = product['retailer_id']
+                if(current_row['id']==retailer_id):
+                    current_row['image_link']= "RajSharma"
+                    print "Match = "+str(retailer_id)+" in "+file
+                    break   
+            writer.writerow(current_row)    
 
 def main():
     lines = read_file(ids_file)
     setup_download_dir()
     for chunk in chunks(lines, products_limit):
+        global products
         products = call_fb_api(chunk)
         print "Downloading Images..."
-#         p = Pool(8)
-#         p.map(get_image, products)
+        p = Pool(8)
+        p.map(get_image, products)
         print "Downloading Done"
         print "Processing images..."
-#         p = Pool(8)
-#         p.map(change_image_labels, products)
+        p = Pool(8)
+        p.map(change_image_labels, products)
         print "Processing Done"
-        all_data = get_all_csv_feeds()
-#         print all_data
-#         p = Pool(8)
-#         p.map(download_csv_files,all_data)
-        download_csv_files(all_data[4])
-        update_csv(products)
-#         p = Pool(8)
-#         p.map(update_csv,products)
+    all_data = get_all_csv_feeds()
+    p = Pool(8)
+    p.map(download_csv_files,all_data)
+    file = glob.glob("*.csv") 
+    p = Pool(8)
+    p.map(update_csv,file)
+
 #         memory release
-        del products
-        gc.collect()
+    del products
+    gc.collect()
         
 main()
 
