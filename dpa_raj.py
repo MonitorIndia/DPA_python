@@ -4,13 +4,14 @@ import gc
 import glob
 from multiprocessing import Pool
 import os
-import re
 import shutil
 import subprocess
 import urllib
-
 from pgmagick import Image, CompositeOperator as co
 import requests
+import urlparse
+import re
+import csv
 
 
 # pretime
@@ -108,40 +109,57 @@ def download_csv_files(data):
     f.close()
 
 def update_csv(products):
+#     print products
+#     for product in products:
+#         retailer_id = product['retailer_id']
+#         image_url = product['image_url']
+#         for file in glob.glob("*.csv"): 
+#             print file
+#             reader  = csv.DictReader(open(file))
+#             writer = csv.DictWriter(open("demo.csv","wb"))
+# #             i=0
+#             for row in reader:
+# #                 print row['id']
+# #                 print row['image_link']
+# #                 print row
+#                 if(retailer_id == row['id']):
+#                     row['image_link']='rajsharma'
+#                 i+=1
+    
+    print products
+    image_urls = []
     for product in products:
-        retailer_id = product['retailer_id']
-        print retailer_id
-        image_url = product['image_url']
-        urls = image_url.split("=")
-        decode_image_url = urllib.unquote(urls[2])
-        print decode_image_url
-        for file in glob.glob("*.csv"):
-            print file
-            out_file_name = str(file).replace(".csv", "")
-            print out_file_name
-#             command = "sed "+",".join("'{0}'" for w in products['image_url'])
-            command = "sed 's," + decode_image_url + "," + "rajsharma1612" + ",g' " + file + " > " + out_file_name + "_updated.csv"
-            print command
-            subprocess.call([command], shell=True)
-            os.rename(out_file_name + "_updated.csv", file)     
+        print product
+        decoded_url = urllib.unquote(product['image_url'])
+        url = re.search('&url.*(.png)', decoded_url).group()
+        print url
+        url = re.search('&url.*(.png)', decoded_url).group(0).split("=")[1]
+        image_urls.append(url)
+    print image_urls
+    for file in glob.glob("*.csv"): 
+        print file
+        out_file_name = str(file).replace(".csv", "")
+        command  = "sed '"+";".join("{0}".format("s,"+w.strip()+",rajsharma1612,g") for w in image_urls)+"' "+file+" > "+out_file_name+"_updated.csv"
+        print command
+        subprocess.call([command], shell=True)
+        os.rename(out_file_name + "_updated.csv", file)
         
-        
-        
+
 def main():
     lines = read_file(ids_file)
     setup_download_dir()
     for chunk in chunks(lines, products_limit):
         products = call_fb_api(chunk)
         print "Downloading Images..."
-        p = Pool(8)
-        p.map(get_image, products)
+#         p = Pool(8)
+#         p.map(get_image, products)
         print "Downloading Done"
         print "Processing images..."
-        p = Pool(8)
-        p.map(change_image_labels, products)
+#         p = Pool(8)
+#         p.map(change_image_labels, products)
         print "Processing Done"
         all_data = get_all_csv_feeds()
-        print all_data
+#         print all_data
 #         p = Pool(8)
 #         p.map(download_csv_files,all_data)
         download_csv_files(all_data[4])
