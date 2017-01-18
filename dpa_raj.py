@@ -1,17 +1,15 @@
 from __builtin__ import file
+import csv
 import datetime
 import gc
 import glob
 from multiprocessing import Pool
 import os
-import shutil
-import subprocess
-import urllib
+
 from pgmagick import Image, CompositeOperator as co
 import requests
-import urlparse
-import re
-import csv
+
+
 products = []
 
 
@@ -141,9 +139,9 @@ def main():
     all_data = get_all_csv_feeds()
     p = Pool(8)
     p.map(download_csv_files,all_data)
-    file = glob.glob("*.csv") 
+    files = glob.glob("*.csv") 
     p = Pool(8)
-    p.map(update_csv,file)
+    p.map(update_csv,files)
 
 #         memory release
     del products
