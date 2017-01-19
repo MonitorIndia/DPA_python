@@ -21,7 +21,7 @@ access_token = "EAADLKZCtcbPoBAGDMydJ8JiM3jKAoZCdKuRKysGYTYT3Krg2pyMVnLZBabgNJ1L
 ids_file = "id_list.txt"
 api_endpoint = "https://graph.facebook.com/v2.8/"
 token_param = "access_token=" + access_token
-products_limit = 1000;
+products_limit = 1000
 
 # read file which contains retailer_id list and return it's contents.
 def read_file(file_name):
@@ -72,8 +72,6 @@ def change_image_labels(obj):
             im.composite(new, 1, 1, co.OverCompositeOp)
             os.chdir(os.getcwd() + "//tmp")
             im.write(retailer_id + ".png")
-#             im.write(retailer_id+"_comp.png")
-#             os.remove(retailer_id+'.png')
         except Exception:
             pass
  
