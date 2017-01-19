@@ -30,8 +30,6 @@ def read_file(file_name):
     if(len(lines) < 1):
         raise "File doesn't contains any data. At least one retailer-id is required."
     f.close()
-    global prouct_limit
-    prouct_limit = len(lines)
     print "Total " + str(len(lines)) + " items"
     return lines
 
@@ -39,7 +37,7 @@ def read_file(file_name):
 def call_fb_api(ids):
     filter_param = "filter={'retailer_id':{'is_any':[" + ','.join("'{0}'".format(w.strip()) for w in ids) + "]}}"
     fields_param = "fields=image_url,retailer_id"
-    limit_param = "limit=" + str(prouct_limit)
+    limit_param = "limit=" + str(products_limit)
     fb_graph_url = api_endpoint + product_catalog_id + "/products?" + limit_param + "&" + fields_param + "&" + filter_param + "&" + token_param
     response = requests.get(fb_graph_url).json()
     return response['data']    
