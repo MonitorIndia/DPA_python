@@ -10,6 +10,7 @@ from pgmagick import Image, CompositeOperator as co
 import requests
 
 total_products = []
+product_ids = set()
 
 # pretime
 a = datetime.datetime.now()
@@ -37,11 +38,9 @@ def read_file(file_name):
 # call fb api with retailer_id list and return all products data.
 def call_fb_api(ids):
     filter_param = "filter={'retailer_id':{'is_any':[" + ','.join("'{0}'".format(w.strip()) for w in ids) + "]}}"
-    print filter_param
     fields_param = "fields=image_url,retailer_id"
     limit_param = "limit=" + str(prouct_limit)
     fb_graph_url = api_endpoint + product_catalog_id + "/products?" + limit_param + "&" + fields_param + "&" + filter_param + "&" + token_param
-#     print fb_graph_url
     response = requests.get(fb_graph_url).json()
     return response['data']    
 
@@ -104,20 +103,16 @@ def download_csv_files(data):
     f.close()
 
 # Update image_link in csv files
-def update_csv(file):
-#     for file in glob.glob("*.csv"): 
+def update_csv(file): 
         print file
         reader  = csv.DictReader(open(file))
         out_file_name = str(file).replace(".csv", "")
         writer = csv.DictWriter(open(out_file_name+"_updated.csv","wb"),fieldnames=reader.fieldnames)
         writer.writeheader()
         for current_row in reader:
-            for product in total_products:
-                retailer_id = product['retailer_id']
-                if(current_row['id']==retailer_id):
-                    current_row['image_link']= "RajSharma"
-                    print "Match = "+str(retailer_id)+" in "+file
-                    break   
+            if current_row['id'] in product_ids:
+                current_row['image_link'] = 'http://www.google.com'
+                print "Match = "+str(current_row['id'])+" in "+file  
             writer.writerow(current_row)    
 
 def main():
@@ -135,15 +130,14 @@ def main():
         p = Pool(8)
         p.map(change_image_labels, products)
         print "Processing Done"
-    print total_products
+    global product_ids
+    product_ids = set([product['retailer_id'] for product in total_products])
     all_data = get_all_csv_feeds()
     p = Pool(8)
     p.map(download_csv_files,all_data)
     files = glob.glob("*.csv") 
     p = Pool(8)
     p.map(update_csv,files)
-
-#memory release
     del total_products
     gc.collect()
         
