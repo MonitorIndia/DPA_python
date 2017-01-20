@@ -1,10 +1,12 @@
 from __builtin__ import file
+import csv
 import datetime
 import ftplib
 import glob
 from multiprocessing import Pool, os
 import multiprocessing
 import shutil
+
 
 class Product_Details:
     all_products = ()
@@ -28,7 +30,11 @@ csv_files = ['ImageTemplateTest1.csv', "ImageTemplateTest2.csv", "ImageTemplateT
 a = datetime.datetime.now()
  
 def read_csv(file): 
-        print file
+    print file
+    reader  = csv.DictReader(open(file))
+    for current_row in reader:
+        print current_row
+        
         
         
 # setup /tmp dir. If it already exists clean it.    
@@ -41,7 +47,6 @@ def setup_download_dir():
     os.chdir(cwd + "//tmp")
     
 def download_csv_files(file):
-    print file
     ftp = ftplib.FTP(csv_host) 
     ftp.login(user_name, password) 
     ftp.retrbinary("RETR %s" %file_path+file ,open(file, 'wb').write)
@@ -49,16 +54,15 @@ def download_csv_files(file):
            
         
 def main():
-    setup_download_dir()
-    p = Pool(8)
-    p.map(download_csv_files, csv_files)
-    print "CSV Downloading Done"
-# #     os.chdir(os.getcwd() + "//tmp")s
-#     _files = glob.glob("*.csv") 
-# #     print _files
-#     read_csv(_files[0])
+#     setup_download_dir()
 #     p = Pool(8)
-#     p.map(update_csv,_files[0])
+#     p.map(download_csv_files, csv_files)
+#     print "CSV Downloading Done"
+    os.chdir(os.getcwd() + "//tmp")
+    _files = glob.glob("*.csv") 
+    read_csv(_files[0])
+#     p = Pool(8)
+#     p.map(read_csv,_files[0])
         
 main()
 
