@@ -6,6 +6,17 @@ from multiprocessing import Pool, os
 import multiprocessing
 import shutil
 
+class Product_Details:
+    all_products = ()
+    def _init_(self,retailer_id,image_url,feed_name):
+        self.retailer_id = retailer_id
+        self.image_url = image_url
+        self.feed_name = feed_name
+        Product_Details.all_products.append(self)
+        
+    def get_all_details(self):
+        return Product_Details.all_products
+
 
 csv_host = "java.gigya.jp"
 user_name = "torchlight"
@@ -42,7 +53,7 @@ def main():
     p = Pool(8)
     p.map(download_csv_files, csv_files)
     print "CSV Downloading Done"
-# #     os.chdir(os.getcwd() + "//tmp")
+# #     os.chdir(os.getcwd() + "//tmp")s
 #     _files = glob.glob("*.csv") 
 # #     print _files
 #     read_csv(_files[0])
