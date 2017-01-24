@@ -107,7 +107,7 @@ def main():
     print "Downloading CSV Files Start"
     p = Pool(8)
     p.map(download_csv_files, csv_files)
-    print "Downloading CSV Files Start"
+    print "Downloading CSV Files End"
     _files = glob.glob("*.csv") 
     for _file in _files:
         feed_data = read_csv(_file)
