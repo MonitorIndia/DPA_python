@@ -90,32 +90,42 @@ def write_csv(feed_data,_file):
     data_dict = {}
     for data in feed_data:
         data_dict[data[0]]=data[1]
-    reader  = csv.DictReader(open(file))
-    out_file_name = str(file).replace(".csv", "")
+    reader  = csv.DictReader(open(_file))
+    out_file_name = str(_file).replace(".csv", "")
     writer = csv.DictWriter(open(out_file_name+"_updated.csv","wb"),fieldnames=reader.fieldnames)
     writer.writeheader()
     for current_row in reader:
         if current_row['id'] in product_ids:
             current_row['image_link'] = data_dict[current_row['id']]
-        writer.writerow(current_row)    
+        writer.writerow(current_row)
+    os.remove(_file)
+    os.rename(out_file_name + "_updated.csv", _file)    
     
 # main function            
 def main():
     setup_download_dir()
-    print "Downloading CSV Files"
+    print "Downloading CSV Files Start"
     p = Pool(8)
     p.map(download_csv_files, csv_files)
-    print "CSV Downloading Done"
+    print "Downloading CSV Files Start"
     _files = glob.glob("*.csv") 
     for _file in _files:
         feed_data = read_csv(_file)
         if feed_data:
             p = Pool(8)
+            print "Downlaoding Images Start"
             p.map(get_image,feed_data)
+            print "Downlaoding Images End"
+            print "Changing image labels Start"
             p = Pool(8)
             p.map(change_image_labels,feed_data)
+            print "Changing image labels End"
+            print "Uploading images Start"
             data_with_new_urls = upload_images(feed_data)
+            print "Uploading images End"
+            print "Writng CSV Start"
             write_csv(data_with_new_urls,_file)
+            print "Writng CSV End"
             
 main()
 
