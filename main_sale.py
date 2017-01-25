@@ -103,7 +103,6 @@ def write_csv(feed_data,_file):
 
 def upload_csv_file(_file):
     print _file
-#     tbd
 
     
 # main function            
