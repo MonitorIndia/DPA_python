@@ -100,6 +100,11 @@ def write_csv(feed_data,_file):
         writer.writerow(current_row)
     os.remove(_file)
     os.rename(out_file_name + "_updated.csv", _file)    
+
+def upload_csv_file(_file):
+    print _file
+#     tbd
+
     
 # main function            
 def main():
@@ -113,7 +118,7 @@ def main():
         feed_data = read_csv(_file)
         if feed_data:
             p = Pool(8)
-            print "Downlaoding Images Start"
+            print "Downlaoding Images Start" 
             p.map(get_image,feed_data)
             print "Downlaoding Images End"
             print "Changing image labels Start"
@@ -126,6 +131,9 @@ def main():
             print "Writng CSV Start"
             write_csv(data_with_new_urls,_file)
             print "Writng CSV End"
+            print "Uplaoding Updated CSV files Start"
+            upload_csv_file(_file)
+            print "Uplaoding Updated CSV files End"
             
 main()
 
